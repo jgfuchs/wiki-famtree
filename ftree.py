@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
+import argparse
+import json
 import requests
+import time
 
 def fetch_data(qid, props='labels|claims'):
     '''Get the data for Wikidata object Q{qid}'''
@@ -66,18 +69,26 @@ def get_info(qid):
 
     return info
 
-def build_tree(tree, root, depth):
+def build_tree(tree, roots, depth):
+    '''
+        Expand a family tree
+
+        tree -- existing tree to add to (can be empty)
+        roots -- IDs of people to start at
+        depth -- maximum # of new layers to add
+    '''
+
     queue = list()  # queue of IDs to look at
-    queue.append(root)
+    queue.extend(roots)
 
     for _ in range(depth):
         nextq = list()
+
         for qid in queue:
             info = get_info(qid)
             tree[qid] = info
-
             for p in ['father', 'mother']:
-                if p in info and not p in tree:
+                if info[p] and not p in tree:
                     nextq.append(info[p])
 
         queue = nextq
@@ -85,7 +96,36 @@ def build_tree(tree, root, depth):
     return queue
 
 if __name__ == '__main__':
-    tree = dict()
-    build_tree(tree, 150966, 3)
-    print(tree)
-    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', help='path to saved tree file')
+    parser.add_argument('-o', '--output', help='path to save new tree file')
+    parser.add_argument('-d', '--depth', help='number of layers to add (default: 4)', type=int, default=4)
+    parser.add_argument('-r', '--roots', help='IDs of people to start at', type=int, nargs='+')
+    args = parser.parse_args()
+
+    tree = {}
+    queue = []
+
+    if args.input:
+        with open(args.input, 'r') as fp:
+            data = json.load(fp)
+            tree = data['tree']
+            queue = data['queue']
+        print('Loaded tree from \'{}\': {} nodes, {} in queue'.format(
+            args.input, len(tree), len(queue)))
+    else:
+        print('Creating new empty tree')
+
+    if args.roots:
+        queue.extend(args.roots)
+
+    queue = build_tree(tree, queue, args.depth)
+
+    if not args.output:
+        args.output = 'tree-{}.json'.format(int(time.time()))
+
+    with open(args.output, 'w') as fp:
+        data = {'tree': tree, 'queue': queue}
+        json.dump(data, fp)
+
+    print('Saved tree to \'{}\''.format(args.output))
