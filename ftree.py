@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
-import argparse
-import json
-import requests
 from datetime import datetime
+import argparse
+import pickle
+import requests
+import sys
 
 
 def build_tree(tree, roots, depth):
@@ -18,17 +19,21 @@ def build_tree(tree, roots, depth):
     queue = list()  # queue of IDs to look at
     queue.extend(roots)
 
-    for _ in range(depth):
+    for d in range(depth):
         nextq = list()
 
         for qid in queue:
+            if qid in tree:
+                continue
             info = get_info(qid)
             tree[qid] = info
             for p in ['father', 'mother']:
-                if info[p] and not p in tree:
+                if info[p] and not info[p] in tree:
                     nextq.append(info[p])
 
         queue = nextq
+
+        print('{}: {} nodes, {} in queue'.format(d + 1, len(tree), len(queue)))
 
     return queue
 
@@ -43,7 +48,7 @@ def get_info(qid):
     # ISO 8601 string. Hence this kludge:
     get_year = lambda x: int(x.split('-')[0])
 
-    # (Wikidata property ID, , post-processing function)
+    # (Wikidata property ID, field name, post-processing function)
     properties = [
         (21, 'gender', lambda x: {6581097: 'm', 6581072: 'f'}.get(x, '?')),
         (22, 'father', None),
@@ -57,7 +62,13 @@ def get_info(qid):
 
     info = dict()
     info['id'] = qid
-    info['name'] = data['labels']['en']['value']
+
+    # sometimes there's no English label
+    if 'en' in data['labels']:
+        info['name'] = data['labels']['en']['value']
+    else:
+        info['name'] = '?'
+
     for pkey, label, func in properties:
         prop = get_prop(data, pkey)
         if func and prop:
@@ -72,7 +83,11 @@ def get_prop(data, prop):
 
     prop = 'P' + str(prop)
     if prop in data['claims']:
-        val = data['claims'][prop][0]['mainsnak']['datavalue']
+        snak = data['claims'][prop][0]['mainsnak']
+        if snak['snaktype'] != 'value':
+            return None
+
+        val = snak['datavalue']
         if val['type'] == 'wikibase-entityid':
             return val['value']['numeric-id']
         elif val['type'] == 'time':
@@ -100,18 +115,18 @@ def fetch_data(qid, props='labels|claims'):
     return json['entities']['Q' + str(qid)]
 
 
-label_cache = dict()
-
-
 def fetch_label(qid):
     '''Just get something's name without all the other data'''
 
     if qid in label_cache:
         return label_cache[qid]
     else:
-        label = fetch_data(qid, 'labels')['labels']['en']['value']
+        data = fetch_data(qid, 'labels')['labels']
+        label = data['en']['value'] if 'en' in data else None
         label_cache[qid] = label
         return label
+
+label_cache = dict()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -127,11 +142,14 @@ if __name__ == '__main__':
     queue = []
 
     if args.input:
-        with open(args.input, 'r') as fp:
-            data = json.load(fp)
-            tree = data['tree']
-            queue = data['queue']
-        print('Loaded tree from \'{}\': {} nodes, {} in queue'.format(
+        try:
+            with open(args.input, 'rb') as fp:
+                tree, queue = pickle.load(fp)
+        except Exception as e:
+            print(str(e))
+            sys.exit(1)
+
+        print('Loaded from \'{}\': {} nodes, {} in queue'.format(
             args.input, len(tree), len(queue)))
     else:
         print('Creating new empty tree')
@@ -141,11 +159,12 @@ if __name__ == '__main__':
 
     queue = build_tree(tree, queue, args.depth)
 
-    if not args.output:
-        args.output = 'tree-{}.json'.format(int(time.time()))
+    if args.output:
+        try:
+            with open(args.output, 'wb') as fp:
+                pickle.dump((tree, queue), fp)
+        except Exception as e:
+            print(str(e))
+            sys.exit(1)
 
-    with open(args.output, 'w') as fp:
-        data = {'tree': tree, 'queue': queue}
-        json.dump(data, fp)
-
-    print('Saved tree to \'{}\''.format(args.output))
+        print('Saved to \'{}\''.format(args.output))
