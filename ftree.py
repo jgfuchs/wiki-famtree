@@ -3,7 +3,8 @@
 import argparse
 import json
 import requests
-import time
+from datetime import datetime
+
 
 def build_tree(tree, roots, depth):
     '''
@@ -30,38 +31,42 @@ def build_tree(tree, roots, depth):
         queue = nextq
 
     return queue
-    
+
 
 def get_info(qid):
     '''Get data about someone from Wikidata. Any unknown fields set to None.'''
 
     data = fetch_data(qid)
 
+    # Wikidata dates are hard to parse: if just the year 1273 is known, then
+    # the date provided would be +1273-00-00T00:00:00Z, which isn't a valid
+    # ISO 8601 string. Hence this kludge:
+    get_year = lambda x: int(x.split('-')[0])
+
+    # (Wikidata property ID, , post-processing function)
     properties = [
-        (21, 'gender'),
-        (22, 'father'),
-        (25, 'mother'),
-        (26, 'spouse'),
-        # (39, 'position'),
-        # (19, 'place_of_birth'),
-        # (20, 'place_of_death'),
-        # (569, 'date_of_birth'),
-        # (570, 'date_of_death'),
+        (21, 'gender', lambda x: {6581097: 'm', 6581072: 'f'}.get(x, '?')),
+        (22, 'father', None),
+        (25, 'mother', None),
+        (26, 'spouse', None),
+        (19, 'place_of_birth', fetch_label),
+        (20, 'place_of_death', fetch_label),
+        (569, 'date_of_birth', get_year),
+        (570, 'date_of_death', get_year),
     ]
 
     info = dict()
     info['id'] = qid
     info['name'] = data['labels']['en']['value']
-    for pkey, label in properties:
-        info[label] = get_prop(data, pkey)
-
-    # convert the IDs for male and female into more useful strings
-    if info['gender']:
-        info['gender'] = {6581097: 'm', 6581072: 'f'}.get(info['gender'], '?')
+    for pkey, label, func in properties:
+        prop = get_prop(data, pkey)
+        if func and prop:
+            prop = func(prop)
+        info[label] = prop
 
     return info
-    
-    
+
+
 def get_prop(data, prop):
     '''Get the property P{prop} of an object, or None if it's missing'''
 
@@ -95,10 +100,18 @@ def fetch_data(qid, props='labels|claims'):
     return json['entities']['Q' + str(qid)]
 
 
+label_cache = dict()
+
+
 def fetch_label(qid):
     '''Just get something's name without all the other data'''
-    return fetch_data(qid, 'labels')['labels']['en']['value']
 
+    if qid in label_cache:
+        return label_cache[qid]
+    else:
+        label = fetch_data(qid, 'labels')['labels']['en']['value']
+        label_cache[qid] = label
+        return label
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -107,7 +120,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d', '--depth', help='number of layers to add (default: 4)', type=int, default=4)
     parser.add_argument(
-        '-r', '--roots', help='IDs of people to start at', type=int, nargs='+')
+        '-r', '--roots', help='people to start at, by Wikidata ID', type=int, nargs='+')
     args = parser.parse_args()
 
     tree = {}
@@ -136,4 +149,3 @@ if __name__ == '__main__':
         json.dump(data, fp)
 
     print('Saved tree to \'{}\''.format(args.output))
-
