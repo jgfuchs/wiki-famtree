@@ -5,45 +5,6 @@ import json
 import requests
 import time
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input', help='path to saved tree file')
-    parser.add_argument('-o', '--output', help='path to save new tree file')
-    parser.add_argument(
-        '-d', '--depth', help='number of layers to add (default: 4)', type=int, default=4)
-    parser.add_argument(
-        '-r', '--roots', help='IDs of people to start at', type=int, nargs='+')
-    args = parser.parse_args()
-
-    tree = {}
-    queue = []
-
-    if args.input:
-        with open(args.input, 'r') as fp:
-            data = json.load(fp)
-            tree = data['tree']
-            queue = data['queue']
-        print('Loaded tree from \'{}\': {} nodes, {} in queue'.format(
-            args.input, len(tree), len(queue)))
-    else:
-        print('Creating new empty tree')
-
-    if args.roots:
-        queue.extend(args.roots)
-
-    queue = build_tree(tree, queue, args.depth)
-
-    if not args.output:
-        args.output = 'tree-{}.json'.format(int(time.time()))
-
-    with open(args.output, 'w') as fp:
-        data = {'tree': tree, 'queue': queue}
-        json.dump(data, fp)
-
-    print('Saved tree to \'{}\''.format(args.output))
-
-
 def build_tree(tree, roots, depth):
     '''
         Expand a family tree
@@ -137,4 +98,42 @@ def fetch_data(qid, props='labels|claims'):
 def fetch_label(qid):
     '''Just get something's name without all the other data'''
     return fetch_data(qid, 'labels')['labels']['en']['value']
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', help='path to saved tree file')
+    parser.add_argument('-o', '--output', help='path to save new tree file')
+    parser.add_argument(
+        '-d', '--depth', help='number of layers to add (default: 4)', type=int, default=4)
+    parser.add_argument(
+        '-r', '--roots', help='IDs of people to start at', type=int, nargs='+')
+    args = parser.parse_args()
+
+    tree = {}
+    queue = []
+
+    if args.input:
+        with open(args.input, 'r') as fp:
+            data = json.load(fp)
+            tree = data['tree']
+            queue = data['queue']
+        print('Loaded tree from \'{}\': {} nodes, {} in queue'.format(
+            args.input, len(tree), len(queue)))
+    else:
+        print('Creating new empty tree')
+
+    if args.roots:
+        queue.extend(args.roots)
+
+    queue = build_tree(tree, queue, args.depth)
+
+    if not args.output:
+        args.output = 'tree-{}.json'.format(int(time.time()))
+
+    with open(args.output, 'w') as fp:
+        data = {'tree': tree, 'queue': queue}
+        json.dump(data, fp)
+
+    print('Saved tree to \'{}\''.format(args.output))
 
