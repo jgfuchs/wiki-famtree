@@ -12,7 +12,7 @@ def build_tree(tree, roots, depth):
         Expand a family tree
 
         tree -- existing tree to add to (can be empty)
-        roots -- IDs of people to start at
+        roots -- array of IDs of people to start at
         depth -- maximum # of new layers to add
     '''
 
@@ -39,11 +39,11 @@ def build_tree(tree, roots, depth):
 
 
 def get_info(qid):
-    '''Get data about someone from Wikidata. Any unknown fields set to None.'''
+    '''Get data about someone from Wikidata. Unknown fields set to None.'''
 
     data = fetch_data(qid)
 
-    # Wikidata dates are hard to parse: if just the year 1273 is known, then
+    # Wikidata dates are hard to parse: if only the year 1273 is known, then
     # the date provided would be +1273-00-00T00:00:00Z, which isn't a valid
     # ISO 8601 string. Hence this kludge:
     get_year = lambda x: int(x.split('-')[0])

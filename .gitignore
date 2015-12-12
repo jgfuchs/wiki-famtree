@@ -1,2 +1,5 @@
 *.pyc
 *.json
+*.dat
+*.svg
+*.dot
