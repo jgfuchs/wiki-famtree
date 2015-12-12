@@ -11,6 +11,7 @@ def get_tooltip(node):
               'date_of_death', 'place_of_death']
     return '{}, {} – {}, {}'.format(*[get(f) for f in fields])
 
+
 if len(sys.argv) != 2:
     print('Usage: {} <filename>'.format(sys.argv[0]))
     sys.exit(1)
