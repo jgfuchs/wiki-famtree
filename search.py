@@ -39,5 +39,5 @@ if __name__ == "__main__":
         results = search(q)
         print('Results for "{}":'.format(q))
         for r in results:
-            print('{}:  {} ({})'.format(*r))
+            print('{} : {} ({})'.format(*r))
         print()

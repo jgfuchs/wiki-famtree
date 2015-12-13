@@ -133,7 +133,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--input', help='path to saved tree file')
     parser.add_argument('-o', '--output', help='path to save new tree file')
     parser.add_argument(
-        '-d', '--depth', help='number of layers to add (default: 4)', type=int, default=4)
+        '-d', '--depth', help='number of layers to add (default: 4)', type=int, default=3)
     parser.add_argument(
         '-r', '--roots', help='people to start at, by Wikidata ID', type=int, nargs='+')
     args = parser.parse_args()
