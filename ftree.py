@@ -46,7 +46,7 @@ def get_info(qid):
     # Wikidata dates are hard to parse: if only the year 1273 is known, then
     # the date provided would be +1273-00-00T00:00:00Z, which isn't a valid
     # ISO 8601 string. Hence this kludge:
-    get_year = lambda x: int(x[1:].split('-')[0])
+    get_year = lambda x: int(x[:5])
 
     # (Wikidata property ID, field name, post-processing function)
     properties = [
@@ -168,3 +168,4 @@ if __name__ == '__main__':
             sys.exit(1)
 
         print('Saved to \'{}\''.format(args.output))
+

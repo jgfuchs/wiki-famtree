@@ -6,11 +6,19 @@ import textwrap
 
 
 def get_tooltip(node):
-    get = lambda x: node[x] if node[x] else '?'
-    fields = ['date_of_birth', 'place_of_birth',
-              'date_of_death', 'place_of_death']
-    return '{}, {} – {}, {}'.format(*[get(f) for f in fields])
+    def get_place(x):
+        return node[x] if node[x] else '?'
 
+    def get_year(x):
+        if node[x]:
+            return str(node[x]) if node[x] >= 0 else str(-node[x]) + ' BC'
+        else:
+            return '?'
+
+    return 'b. {}, {}; d. {}, {}'.format(
+        get_year('date_of_birth'), get_place('place_of_birth'),
+        get_year('date_of_death'), get_place('place_of_death')
+    )
 
 if len(sys.argv) != 2:
     print('Usage: {} <filename>'.format(sys.argv[0]))
@@ -28,7 +36,6 @@ except Exception as e:
 fp = open(sys.argv[1] + '.dot', 'wt')
 fp.write('digraph tree {\n')
 fp.write('''
-    // nodesep=0.1
     rankdir=RL
     node [shape=box]
 ''')

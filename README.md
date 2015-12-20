@@ -8,4 +8,3 @@ Todo:
 + batch wikidata queries
 + build tree other direction (through children)
 + dynamic graph browser?
-
