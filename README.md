@@ -4,6 +4,7 @@ Family trees generated using [Wikidata](https://www.wikidata.org/). Can produce 
 
 Todo:
 
++ links to Wikipedia
 + combine make_dot.py and search.py into ftree.py
 + batch wikidata queries
 + build tree other direction (through children)
