@@ -41,11 +41,6 @@ def build_tree(tree, roots, depth):
 def get_info(qid):
     '''Get data about someone from Wikidata. Unknown fields set to None.'''
 
-    data = fetch_data(qid)
-
-    # Wikidata dates are hard to parse: if only the year 1273 is known, then
-    # the date provided would be +1273-00-00T00:00:00Z, which isn't a valid
-    # ISO 8601 string. Hence this kludge:
     get_year = lambda x: int(x[:5])
 
     # (Wikidata property ID, field name, post-processing function)
@@ -60,6 +55,8 @@ def get_info(qid):
         (570, 'date_of_death', get_year),
     ]
 
+    data = fetch_data(qid)
+
     info = dict()
     info['id'] = qid
 
@@ -68,6 +65,11 @@ def get_info(qid):
         info['name'] = data['labels']['en']['value']
     else:
         info['name'] = '?'
+
+    if 'enwiki' in data['sitelinks']:
+        info['wiki'] = data['sitelinks']['enwiki']['title']
+    else:
+        info['wiki'] = None
 
     for pkey, label, func in properties:
         prop = get_prop(data, pkey)
@@ -98,7 +100,7 @@ def get_prop(data, prop):
         return None
 
 
-def fetch_data(qid, props='labels|claims'):
+def fetch_data(qid, props='labels|claims|sitelinks'):
     '''Get the data for Wikidata object Q{qid}'''
 
     params = {

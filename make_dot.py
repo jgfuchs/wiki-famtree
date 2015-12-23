@@ -15,10 +15,22 @@ def get_tooltip(node):
         else:
             return '?'
 
-    return 'b. {}, {}; d. {}, {}'.format(
+    return '{} ({}) ‒ {} ({})'.format(
         get_year('date_of_birth'), get_place('place_of_birth'),
         get_year('date_of_death'), get_place('place_of_death')
     )
+
+
+def get_url(title):
+    if title:
+        return 'https://en.wikipedia.org/wiki/{}'.format(wikify(title))
+    else:
+        return '#'
+
+
+def wikify(title):
+    return title.replace(' ', '_')
+
 
 if len(sys.argv) != 2:
     print('Usage: {} <filename>'.format(sys.argv[0]))
@@ -45,7 +57,7 @@ for qid in tree:
 
     attrs = {
         'label': textwrap.fill(node['name'], width=24),
-        'URL': 'https://www.wikidata.org/wiki/Q{}'.format(qid),
+        'URL': get_url(node['wiki']),
         'tooltip': get_tooltip(node),
     }
 
