@@ -1,4 +1,4 @@
-# wiki-ftree
+# wiki-famtree
 
 Family trees generated using [Wikidata](https://www.wikidata.org/). Can produce Graphviz DOT files for nice-looking SVG output. See ElizabethI.svg for an example.
 
